@@ -48,6 +48,10 @@ public class MapNode {
 		this.coords = coords;
 	}
 	
+	/** Add edge to this node
+	 * 
+	 * @param edge the edge to add to the node
+	 */	
 	public void addEdge(MapEdge edge) {
 		//System.out.println("MapNode.addEdge: add edge to my list...");
 		edges.add(edge);

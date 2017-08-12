@@ -50,12 +50,13 @@ public class MapEdge {
 		super();
 	}
 	
-	/**
-	 * @param length
-	 * @param type
-	 * @param from
-	 * @param to
-	 */
+	/** Constructor
+	 * 
+	 * @param length distance of the edge/road
+	 * @param type road type
+	 * @param from starting node
+	 * @param to ending node
+	 */	
 	public MapEdge(String name, String type, double length, MapNode from, MapNode to) {
 		super();
 		this.name = name;
@@ -64,8 +65,6 @@ public class MapEdge {
 		this.from = from;
 		this.to = to;
 	}
-	
-	
 	
 	
 }

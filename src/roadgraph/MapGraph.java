@@ -223,9 +223,13 @@ public class MapGraph {
 		return null;
 	}
 	
-	/* 
-	 * add all edges of a node to the queue
-	 */
+	/** Add all edges of a node to the queue
+	 * 
+	 * @param currNode The node to use for finding edges
+	 * @param queue Queue where we add nodes
+	 * @param visited A list of visited nodes, so we don't add the same nodes multiple times
+	 * @param parentMap A map of parent nodes to facilitate the reconstruction of the path
+	 */	
 	private void addEdges(MapNode currNode, Queue<MapNode> queue, 
 			HashSet<MapNode> visited, HashMap<MapNode, MapNode> parentMap) {
 		
@@ -245,7 +249,12 @@ public class MapGraph {
 		}
 	}
 	
-	// check if params are ok
+	/** Check if all parameters are OK
+	 * 
+	 * @param start The node to use for start
+	 * @param goal The node to use for the goal/end
+	 * @return True if everything is OK
+	 */
 	private Boolean checkBfsParams(GeographicPoint start, 
 			 					     GeographicPoint goal) {
 		if (start == null || goal == null ) {
@@ -257,8 +266,12 @@ public class MapGraph {
 		}
 	}
 	
-	/*
-	 * make list from one point to the other
+	/** Make a list/path from one point to another
+	 * 
+	 * @param start The node to use for start
+	 * @param goal The node to use for the goal/end
+	 * @param parentMap the mapping of parent nodes so we can recreate the path
+	 * @return List of geographic points to get from start to goal
 	 */
 	private List<GeographicPoint> createPath(MapNode start, MapNode goal, 
 			HashMap<MapNode, MapNode> parentMap) {
