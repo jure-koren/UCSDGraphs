@@ -8,8 +8,15 @@
 package roadgraph;
 
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.Stack;
 import java.util.function.Consumer;
 
 import geography.GeographicPoint;
@@ -23,15 +30,18 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-	//TODO: Add your member variables here in WEEK 3
-	
+	private HashMap<GeographicPoint, MapNode> vertices;
+	private HashSet<MapEdge> edges;
 	
 	/** 
 	 * Create a new empty MapGraph 
 	 */
 	public MapGraph()
 	{
-		// TODO: Implement in this constructor in WEEK 3
+		// new list
+		System.out.println("New MapGraph");
+		vertices = new HashMap<GeographicPoint, MapNode>();
+		edges = new HashSet<MapEdge>();
 	}
 	
 	/**
@@ -40,8 +50,8 @@ public class MapGraph {
 	 */
 	public int getNumVertices()
 	{
-		//TODO: Implement this method in WEEK 3
-		return 0;
+		// we just return the number
+		return vertices.size();
 	}
 	
 	/**
@@ -50,8 +60,15 @@ public class MapGraph {
 	 */
 	public Set<GeographicPoint> getVertices()
 	{
-		//TODO: Implement this method in WEEK 3
-		return null;
+		// new set
+		HashSet<GeographicPoint> set = new HashSet<GeographicPoint>();
+
+		// add from my vertices to this new set
+		for (GeographicPoint vertix : vertices.keySet()) {
+		    set.add(vertix);
+		}
+		
+		return set;
 	}
 	
 	/**
@@ -60,8 +77,7 @@ public class MapGraph {
 	 */
 	public int getNumEdges()
 	{
-		//TODO: Implement this method in WEEK 3
-		return 0;
+		return edges.size();
 	}
 
 	
@@ -75,8 +91,23 @@ public class MapGraph {
 	 */
 	public boolean addVertex(GeographicPoint location)
 	{
-		// TODO: Implement this method in WEEK 3
-		return false;
+		//System.out.println("MapGraph.addVertex: " + location.toString() );
+		// check if we have it already or location is null
+		if (location == null || vertices.containsKey(location) ) {
+			// if we have it return false			
+			return false;
+			
+		} else {				
+			// add it
+			MapNode n = new MapNode(location);
+			
+			// put on list/map
+			vertices.put(location, n);
+			
+			// everything ok, return true
+			return true;
+			
+		}
 	}
 	
 	/**
@@ -94,7 +125,30 @@ public class MapGraph {
 	public void addEdge(GeographicPoint from, GeographicPoint to, String roadName,
 			String roadType, double length) throws IllegalArgumentException {
 
-		//TODO: Implement this method in WEEK 3
+		//System.out.println("MapGraph.addEdge: " + roadName + ": " 
+		//			+ from.toString() + " -> " + to.toString() );		
+		
+		// check arguments
+		if (!vertices.containsKey(from) || from == null) {
+			throw new IllegalArgumentException();
+		} else if (!vertices.containsKey(to) || from == to) {
+			throw new IllegalArgumentException();
+		} else if (length == 0) {
+			throw new IllegalArgumentException();
+		}
+
+		MapNode fromNode = vertices.get(from);
+		MapNode toNode = vertices.get(to);		
+		
+		// create edge
+		//System.out.println("MapGraph.addEdge: create edge...");
+		MapEdge e = new MapEdge(roadName, roadType, length, fromNode, toNode);
+		// add to my list of edges/roads
+		//System.out.println("MapGraph.addEdge: add edge to list...");
+		edges.add(e);
+		//System.out.println("MapGraph.addEdge: add edge to start node...");
+		// add road to starting node's edges
+		fromNode.addEdge(e);
 		
 	}
 	
@@ -123,12 +177,121 @@ public class MapGraph {
 	public List<GeographicPoint> bfs(GeographicPoint start, 
 			 					     GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 3
+		// bfs - we need a fifo queue, visited set and parent map
 		
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
-
+		// check input parameters
+		if (!checkBfsParams(start, goal)) {
+			return null;
+		}
+		//System.out.println("MapGraph.bfs: Search: " + start + " -> " + goal );
+		
+		// get start and goal nodes
+		MapNode startNode = vertices.get(start);
+		MapNode goalNode = vertices.get(goal);
+		
+		// keep track of visited nodes and path
+		HashSet<MapNode> visited = new HashSet<MapNode>();
+		HashMap<MapNode, MapNode> parentMap = new HashMap<MapNode, MapNode>();
+		
+		// add first element to queue
+		Queue<MapNode> queue = new LinkedList<MapNode>();
+		queue.add(startNode);
+		visited.add(startNode);
+		
+		// while queue not empty
+		while (!queue.isEmpty()) {
+			// get first element
+			MapNode currNode = queue.remove();
+			//System.out.println("MapGraph.bfs: check node: " + currNode.toString() );
+			
+			// Hook for visualization.  See writeup.
+		    nodeSearched.accept(currNode.getCoords() );			
+			
+			// if curr == goal, we did it -> return parent map
+			if (currNode.equals(goalNode)) {
+				//System.out.println("MapGraph.bfs: check node: FOUND!");
+				return createPath(startNode, goalNode, parentMap); // TODO
+			} else {
+				// add unvisited edges to my queue
+				//System.out.println("MapGraph.bfs: add node's edges to list.");
+				addEdges(currNode, queue, visited, parentMap);
+			}
+			// next queue item	
+		}
+		
+		// no path possible
 		return null;
+	}
+	
+	/* 
+	 * add all edges of a node to the queue
+	 */
+	private void addEdges(MapNode currNode, Queue<MapNode> queue, 
+			HashSet<MapNode> visited, HashMap<MapNode, MapNode> parentMap) {
+		
+		// get unvisited roads to other nodes add add them to queue
+		HashSet<MapEdge> roads = currNode.getEdges();
+		for(MapEdge road : roads) {
+			MapNode destNode = road.getTo();
+			// if not visited
+			if (!visited.contains(destNode)) {
+				// add to visited
+				visited.add(destNode);
+				// add curr as n's parent in parent map
+				parentMap.put(destNode, currNode );
+				// enqueue n onto queue					
+				queue.add(destNode );
+			}
+		}
+	}
+	
+	// check if params are ok
+	private Boolean checkBfsParams(GeographicPoint start, 
+			 					     GeographicPoint goal) {
+		if (start == null || goal == null ) {
+			return false;
+		} else if (!vertices.containsKey(start) || !vertices.containsKey(goal)) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	/*
+	 * make list from one point to the other
+	 */
+	private List<GeographicPoint> createPath(MapNode start, MapNode goal, 
+			HashMap<MapNode, MapNode> parentMap) {
+		
+		List<GeographicPoint> path = new LinkedList<GeographicPoint>();
+		
+		// go up from the goal
+		MapNode currNode = goal;
+		path.add(currNode.getCoords());
+		
+		// prevent endless loops in case of errors
+		int maxIterations = 10000;
+		
+		// search up to start
+		while (!currNode.equals(start)) {
+			// find node above me
+			MapNode upNode = parentMap.get(currNode);
+			// set new current node
+			currNode = upNode;
+			// add to path
+			path.add(currNode.getCoords());
+			
+			if (path.size()> maxIterations) {
+				// too many ... prevent endless loops
+				return null;
+			}
+		}
+		
+		// we need from start to goal, not the other way around
+		Collections.reverse(path);
+		
+		// ok, we have the path
+		return path;
 	}
 	
 
