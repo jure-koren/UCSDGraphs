@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
@@ -180,7 +181,7 @@ public class MapGraph {
 		// bfs - we need a fifo queue, visited set and parent map
 		
 		// check input parameters
-		if (!checkBfsParams(start, goal)) {
+		if (!checkSearchParams(start, goal)) {
 			return null;
 		}
 		//System.out.println("MapGraph.bfs: Search: " + start + " -> " + goal );
@@ -214,7 +215,7 @@ public class MapGraph {
 			} else {
 				// add unvisited edges to my queue
 				//System.out.println("MapGraph.bfs: add node's edges to list.");
-				addEdges(currNode, queue, visited, parentMap);
+				addEdgesForBfs(currNode, queue, visited, parentMap);
 			}
 			// next queue item	
 		}
@@ -230,7 +231,7 @@ public class MapGraph {
 	 * @param visited A list of visited nodes, so we don't add the same nodes multiple times
 	 * @param parentMap A map of parent nodes to facilitate the reconstruction of the path
 	 */	
-	private void addEdges(MapNode currNode, Queue<MapNode> queue, 
+	private void addEdgesForBfs(MapNode currNode, Queue<MapNode> queue, 
 			HashSet<MapNode> visited, HashMap<MapNode, MapNode> parentMap) {
 		
 		// get unvisited roads to other nodes add add them to queue
@@ -255,7 +256,7 @@ public class MapGraph {
 	 * @param goal The node to use for the goal/end
 	 * @return True if everything is OK
 	 */
-	private Boolean checkBfsParams(GeographicPoint start, 
+	private Boolean checkSearchParams(GeographicPoint start, 
 			 					     GeographicPoint goal) {
 		if (start == null || goal == null ) {
 			return false;
@@ -333,14 +334,153 @@ public class MapGraph {
 	public List<GeographicPoint> dijkstra(GeographicPoint start, 
 										  GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 4
-
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
-		
-		return null;
+		// call method for search
+		return priorityQueueSearch(start, goal, nodeSearched, false);
 	}
 
+	/** Find the path from start to goal using Dijkstra's or aStar algorithm
+	 * 
+	 * @param start The starting location
+	 * @param goal The goal location
+	 * @param nodeSearched A hook for visualization.  See assignment instructions for how to use it.
+	 * @param usedistanceToGoal true = use the help of distance to goal -> A* search, false = Dijkstra search	 * 
+	 * @return The list of intersections that form the shortest path from 
+	 *   start to goal (including both start and goal).
+	 */
+	public List<GeographicPoint> priorityQueueSearch(GeographicPoint start, 
+										  GeographicPoint goal, Consumer<GeographicPoint> nodeSearched, 
+										  boolean useDistanceToGoal)
+	{
+		// check input parameters - use bfs function
+		if (!checkSearchParams(start, goal)) {
+			return null;
+		}
+
+		
+		// get start and goal nodes
+		MapNode startNode = vertices.get(start);
+		MapNode goalNode = vertices.get(goal);
+		
+		// keep track of visited nodes and path
+		HashSet<MapNode> visited = new HashSet<MapNode>();
+		HashMap<MapNode, MapNode> parentMap = new HashMap<MapNode, MapNode>();
+		
+		// create queue
+		PriorityQueue<MapNode> queue = new PriorityQueue<MapNode>();
+		
+		// initialize queue to infinity
+		if (!useDistanceToGoal) {
+			//System.out.println("MapGraph.search: D. Search: " + start + " -> " + goal );			
+			setAllNodesTo(Double.POSITIVE_INFINITY, 0);
+			// set distance - priority
+			startNode.setDistanceFromStart(0);
+			startNode.setDistanceToGoal(0);
+		} else {
+			//System.out.println("MapGraph.search: A* Search: " + start + " -> " + goal );						
+			setAllNodesTo(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+			// set distance - priority
+			startNode.setDistanceFromStart(0);
+			startNode.setDistanceToGoal(goalNode);
+		}
+		
+		// add first el. to queue with priority 0
+		startNode.setPriority(startNode.getTotalDistance());
+		queue.add(startNode);
+		
+		// while queue not empty
+		while (!queue.isEmpty()) {
+			// get first element
+			MapNode currNode = queue.remove();
+			//System.out.println("");
+			//System.out.println("MapGraph.search: check node: " + currNode.toString() );
+			//System.out.println("MapGraph.search: distance for node: " + currNode.getTotalDistance() );
+			
+			// Hook for visualization.  See writeup.
+		    nodeSearched.accept(currNode.getCoords() );			
+			
+		    // if not visited
+		    if (!visited.contains(currNode)) {
+		    	// add curr to visited
+		    	visited.add(currNode);
+		    	
+		    	// if curr == goal, return parent map
+		    	if (currNode.equals(goalNode)) {
+		    		int visitedNodes = visited.size();
+		    		System.out.println("MapGraph.search: check node: FOUND!, visited n.: " + visitedNodes);
+					return createPath(startNode, goalNode, parentMap); // TODO
+				} else {
+					//System.out.println("MapGraph.search: add edges/roads...");
+					addEdgesForPqSearch(currNode, queue, visited, parentMap, useDistanceToGoal, goalNode);
+				}
+		    }
+			// next queue item	
+		}
+		
+		// write somewhere the number of nodes visited
+		//System.out.println("MapGraph.search: OPS, couldn't find destination!");
+		return null;
+	}	
+		
+	/** Add all edges of a node to the queue
+	 * 
+	 * @param currNode The node to use for finding edges
+	 * @param queue Queue where we add nodes
+	 * @param visited A list of visited nodes, so we don't add the same nodes multiple times
+	 * @param parentMap A map of parent nodes to facilitate the reconstruction of the path
+	 * @param usedistanceToGoal true = use the help of distance to goal -> A* search, false = Dijkstra search
+	 * @param goalNode goal node, used only if usedistanceToGoal is true
+	 */	
+	private void addEdgesForPqSearch(MapNode currNode, Queue<MapNode> queue, 
+			HashSet<MapNode> visited, HashMap<MapNode, MapNode> parentMap, 
+			boolean usedistanceToGoal, MapNode goalNode) {
+		
+		// get unvisited roads to other nodes add add them to queue
+		HashSet<MapEdge> roads = currNode.getEdges();
+		for(MapEdge road : roads) {
+			MapNode destNode = road.getTo();
+			//System.out.println("MapGraph.search: road: " + road.getName() + " (" + road.getLength() + "), checking...");
+			// if not visited
+			if (!visited.contains(destNode)) {
+				// get previous distance to node
+				double beforeDistance = destNode.getDistanceFromStart();
+				// get distance to node through current road/edge
+				double throughCurrDistance = currNode.getDistanceFromStart() + road.getLength();
+	    		// if path through curr to destNode is shorter
+				//System.out.println("MapGraph.search: beforeDistance: " + beforeDistance + ", new: " + throughCurrDistance);
+				if (throughCurrDistance < beforeDistance) {	
+					// update n's distance
+					//System.out.println("MapGraph.search: ok, we have a better road with dist.: " + throughCurrDistance);					
+					destNode.setDistanceFromStart(throughCurrDistance);
+					if (usedistanceToGoal) {
+						destNode.setDistanceToGoal(goalNode);
+					}
+					// update curr as destNode parent in parent map
+					parentMap.put(destNode, currNode );
+	    			// enqueue (destNode, distance) to queue
+					// we use the total distance for priority... 
+					// this could be extended to account for speed, traffic, ...
+					destNode.setPriority(destNode.getTotalDistance());					
+					queue.add(destNode);
+				} else {
+					//System.out.println("MapGraph.search: dest is on longer road.");
+				}
+				
+			} else {
+				//System.out.println("MapGraph.search: dest via that road already visited.");
+			}
+		}
+	}		
+		
+	
+	private void setAllNodesTo(double distanceFromStart, double distanceToGoal) {
+		// Iterate over vertices / nodes
+		for (MapNode v : vertices.values() ) {
+			v.setDistanceFromStart(distanceFromStart);
+			v.setDistanceToGoal(distanceToGoal);
+		}
+	}
+	
+	
 	/** Find the path from start to goal using A-Star search
 	 * 
 	 * @param start The starting location
@@ -365,12 +505,8 @@ public class MapGraph {
 	public List<GeographicPoint> aStarSearch(GeographicPoint start, 
 											 GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 4
-		
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
-		
-		return null;
+		// call method for search
+		return priorityQueueSearch(start, goal, nodeSearched, true);
 	}
 
 	
@@ -384,6 +520,35 @@ public class MapGraph {
 		System.out.println("DONE.");
 		
 		// You can use this method for testing.  
+		
+	    MapGraph simpleTestMap = new MapGraph();
+		GraphLoader.loadRoadMap("data/testdata/simpletest.map", simpleTestMap);
+		
+		GeographicPoint testStart = new GeographicPoint(1.0, 1.0);
+		GeographicPoint testEnd = new GeographicPoint(8.0, -1.0);
+		
+		System.out.println("Test 1 using simpletest: Dijkstra should be 9 and AStar should be 5");
+		List<GeographicPoint> testroute = simpleTestMap.dijkstra(testStart,testEnd);
+		List<GeographicPoint> testroute2 = simpleTestMap.aStarSearch(testStart,testEnd);
+		
+		
+		MapGraph testMap = new MapGraph();
+		GraphLoader.loadRoadMap("data/maps/utc.map", testMap);
+		
+		// A very simple test using real data
+		testStart = new GeographicPoint(32.869423, -117.220917);
+		testEnd = new GeographicPoint(32.869255, -117.216927);
+		System.out.println("Test 2 using utc: Dijkstra should be 13 and AStar should be 5");
+		testroute = testMap.dijkstra(testStart,testEnd);
+		testroute2 = testMap.aStarSearch(testStart,testEnd);
+		
+		
+		// A slightly more complex test using real data
+		testStart = new GeographicPoint(32.8674388, -117.2190213);
+		testEnd = new GeographicPoint(32.8697828, -117.2244506);
+		System.out.println("Test 3 using utc: Dijkstra should be 37 and AStar should be 10");
+		testroute = testMap.dijkstra(testStart,testEnd);
+		testroute2 = testMap.aStarSearch(testStart,testEnd);		
 		
 		
 		/* Here are some test cases you should try before you attempt 
