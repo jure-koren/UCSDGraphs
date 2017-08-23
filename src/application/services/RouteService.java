@@ -104,7 +104,7 @@ public class RouteService {
         	}
 
         	if(toggle == RouteController.DIJ || toggle == RouteController.A_STAR ||
-        			toggle == RouteController.BFS) {
+        			toggle == RouteController.BFS || toggle == RouteController.TIME) {
         		markerManager.initVisualization();
             	Consumer<geography.GeographicPoint> nodeAccepter = markerManager.getVisualization()::acceptPoint;
             	List<geography.GeographicPoint> path = null;
@@ -117,7 +117,10 @@ public class RouteService {
             	else if (toggle == RouteController.A_STAR) {
             		path = markerManager.getDataSet().getGraph().aStarSearch(start, end, nodeAccepter);
             	}
-
+            	else if (toggle == RouteController.TIME) {
+            		path = markerManager.getDataSet().getGraph().timeSearch(start, end, nodeAccepter);
+            	}
+            	
             	if(path == null) {
                     // System.out.println("In displayRoute : PATH NOT FOUND");
                     MapApp.showInfoAlert("Routing Error : ", "No path found");

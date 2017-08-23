@@ -17,57 +17,10 @@ public class MapNode implements Comparable<MapNode> {
 	private String nodeName;
 	private double distanceToGoal;
 	private double distanceFromStart;
+	private double timeFromStart;
+	private double timeToGoal;
 	private double priority;
-	
-	
-	/*  getters / setters */
-	
-	public GeographicPoint getCoords() {
-		return coords;
-	}
-	public void setCoords(GeographicPoint coords) {
-		this.coords = coords;
-	}
-	public HashSet<MapEdge> getEdges() {
-		return edges;
-	}
-	public void setEdges(HashSet<MapEdge> edges) {
-		this.edges = edges;
-	}
-	public String getNodeName() {
-		return nodeName;
-	}
-	public void setNodeName(String nodeName) {
-		this.nodeName = nodeName;
-	}
-	public double getDistanceToGoal() {
-		return distanceToGoal;
-	}
-	public void setDistanceToGoal(double distanceToGoal) {
-		this.distanceToGoal = distanceToGoal;
-	}
-	public void setDistanceToGoal(MapNode goalNode) {
-		// get coords from goal
-		GeographicPoint goalCoords = goalNode.getCoords();
-		// update my distance
-		this.distanceToGoal = this.getCoords().distance(goalCoords);
-	}	
-	public double getDistanceFromStart() {
-		return distanceFromStart;
-	}
-	public void setDistanceFromStart(double distanceFromStart) {
-		this.distanceFromStart = distanceFromStart;
-	}
-	public double getPriority() {
-		return priority;
-	}
-	public void setPriority(double priority) {
-		this.priority = priority;
-	}
-	
-	/* end getters / setters */
-	
-	
+
 	
 	// empty node
 	public MapNode() {
@@ -129,12 +82,96 @@ public class MapNode implements Comparable<MapNode> {
     	
     }	
     
+    // get total distance (from start + to goal)
     public double getTotalDistance() {
     	return (distanceFromStart + distanceToGoal);
     }
     
+    // get total time (from start + to goal)
+    public double getTotalTime() {
+    	return (timeFromStart + timeToGoal);
+    }    
+    
+    
+    // set total distance to goal automatically from goal node
+	public void setDistanceToGoal(MapNode goalNode) {
+		// get coords from goal
+		GeographicPoint goalCoords = goalNode.getCoords();
+		// update my distance
+		this.distanceToGoal = this.getCoords().distance(goalCoords);
+	}	
+	
+	// set total time to goal automatically from goal node
+	public void setTimeToGoal(MapNode goalNode) {
+		// get coords from goal
+		GeographicPoint goalCoords = goalNode.getCoords();
+		// update my distance by using fastest speed
+		
+		double distance = this.getCoords().distance(goalCoords);
+		double time = MapEdge.getTime(MapEdge.MAX_TRAVEL_SPEED, distance);
+		
+		this.setTimeToGoal(time);
+	}
     
 
+    
+
+	/*  getters / setters */
+	
+	public GeographicPoint getCoords() {
+		return coords;
+	}
+	public void setCoords(GeographicPoint coords) {
+		this.coords = coords;
+	}
+	public HashSet<MapEdge> getEdges() {
+		return edges;
+	}
+	public void setEdges(HashSet<MapEdge> edges) {
+		this.edges = edges;
+	}
+	public String getNodeName() {
+		return nodeName;
+	}
+	public void setNodeName(String nodeName) {
+		this.nodeName = nodeName;
+	}
+	public double getDistanceToGoal() {
+		return distanceToGoal;
+	}
+	public void setDistanceToGoal(double distanceToGoal) {
+		this.distanceToGoal = distanceToGoal;
+	}
+	public double getDistanceFromStart() {
+		return distanceFromStart;
+	}
+	public void setDistanceFromStart(double distanceFromStart) {
+		this.distanceFromStart = distanceFromStart;
+	}
+	public double getPriority() {
+		return priority;
+	}
+	public void setPriority(double priority) {
+		this.priority = priority;
+	}
+
+	public double getTimeFromStart() {
+		return timeFromStart;
+	}
+
+	public void setTimeFromStart(double timeFromStart) {
+		this.timeFromStart = timeFromStart;
+	}
+
+	public double getTimeToGoal() {
+		return timeToGoal;
+	}
+
+	public void setTimeToGoal(double timeToGoal) {
+		this.timeToGoal = timeToGoal;
+	}
+	
+	/* end getters / setters */    
 	
 	
 }

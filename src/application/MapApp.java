@@ -337,10 +337,14 @@ implements MapComponentInitializedListener {
 		RadioButton rbB = new RadioButton("BFS");
 		rbB.setUserData("BFS");
 
+		RadioButton rbT = new RadioButton("Time");
+		rbT.setUserData("Time");		
+		
 		rbB.setToggleGroup(group);
 		rbD.setToggleGroup(group);
 		rbA.setToggleGroup(group);
-		return new LinkedList<RadioButton>(Arrays.asList(rbB, rbD, rbA));
+		rbT.setToggleGroup(group);
+		return new LinkedList<RadioButton>(Arrays.asList(rbB, rbD, rbA, rbT));
 	}
 
 
